@@ -1,31 +1,115 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from datetime import datetime
+"""
+Модуль определения моделей базы данных
 
-Base = declarative_base()
+Содержит ORM-модели для:
+- Пользователей бота (User)
+- Сообщений пользователей (Message)
+"""
+
+from __future__ import annotations
+from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+class Base(DeclarativeBase):
+    """Базовый класс для всех ORM-моделей"""
+    pass
 
 class User(Base):
+    """Модель пользователя Telegram бота
+    
+    Attributes:
+        telegram_id: Уникальный идентификатор пользователя в Telegram
+        username: Имя пользователя (опционально)
+        is_admin: Флаг администратора системы
+        created_at: Дата создания записи
+        last_activity: Последняя активность пользователя
+    """
+    
     __tablename__ = 'users'
-    
-    id = Column(Integer, primary_key=True)
-    telegram_id = Column(Integer, unique=True, index=True)
-    username = Column(String(50))
-    is_admin = Column(Boolean, default=False, nullable=False)  # Добавляем новое поле
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_activity = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    messages = relationship("Message", back_populates="user")
 
-    def __repr__(self):
-        return f"<User {self.username} | Admin: {self.is_admin}>"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(
+        Integer, 
+        unique=True,
+        index=True,
+        comment="Уникальный Telegram ID пользователя"
+    )
+    username: Mapped[Optional[str]] = mapped_column(
+        String(50), 
+        comment="Имя пользователя в Telegram"
+    )
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean, 
+        default=False,
+        nullable=False,
+        comment="Флаг администраторских прав"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=datetime.utcnow,
+        comment="Дата регистрации пользователя"
+    )
+    last_activity: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        comment="Время последней активности"
+    )
+
+    messages: Mapped[List[Message]] = relationship(
+        "Message", 
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<User(id={self.id}, "
+            f"telegram_id={self.telegram_id}, "
+            f"username='{self.username}', "
+            f"is_admin={self.is_admin})>"
+        )
 
 class Message(Base):
+    """Модель сообщения пользователя
+    
+    Attributes:
+        text: Текст сообщения
+        created_at: Дата создания сообщения
+        user_id: Связь с пользователем
+    """
+    
     __tablename__ = 'messages'
-    
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    text = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    user = relationship("User", back_populates="messages")
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    text: Mapped[str] = mapped_column(
+        Text,
+        comment="Текст сообщения пользователя"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=datetime.utcnow,
+        index=True,
+        comment="Дата создания сообщения"
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey('users.id', ondelete="CASCADE"),
+        index=True,
+        comment="Внешний ключ к пользователю"
+    )
+
+    user: Mapped[User] = relationship(
+        User, 
+        back_populates="messages",
+        lazy="joined"
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<Message(id={self.id}, "
+            f"user_id={self.user_id}, "
+            f"created_at={self.created_at.isoformat()})>"
+        )
