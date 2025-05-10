@@ -1,48 +1,90 @@
+"""
+Модуль фильтров и утилит для проверки прав администратора
+
+Содержит:
+- Функцию проверки административных прав пользователя
+- Кастомный фильтр для обработчиков Aiogram
+"""
+
+from typing import Any, Optional, cast
+
 from aiogram import Router, types
 from aiogram.filters import Filter
-from aiogram.filters.command import Command
-
 from loguru import logger
 from sqlalchemy import select
-from database.db import get_db
-from bot.models import User
+from sqlalchemy.ext.asyncio import AsyncSession
 
-async def is_admin(user_id: int) -> bool:
-    """
-    Проверяет, является ли пользователь администратором
-    """
-    logger.debug(f"Начало проверки прав администратора для user_id: {user_id}")
+from bot.models import User
+from database.db import async_session
+
+class AdminFilter(Filter):
+    """Фильтр проверки административных прав пользователя.
     
-    async for session in get_db():
-        try:
-            logger.info(f"Выполнение запроса к БД для user_id: {user_id}")
+    Использование:
+    @router.message(AdminFilter())
+    async def admin_handler(message: types.Message):
+        ...
+    """
+
+    async def __call__(self, update: Any) -> bool:
+        """Проверяет наличие административных прав у отправителя сообщения.
+        
+        Args:
+            update: Объект входящего обновления от Telegram
             
-            # Выполняем запрос к БД
-            result = await session.execute(
-                select(User)
-                .where(User.telegram_id == user_id)
-            )
-            user = result.scalar_one_or_none()
-            
-            if not user:
-                logger.warning(f"Пользователь {user_id} не найден в базе данных")
-                return False
-                
-            logger.debug(f"Найден пользователь: {user.id} (telegram_id: {user.telegram_id})")
-            logger.info(f"Статус администратора для {user_id}: {user.is_admin}")
-            
-            return user.is_admin
-            
-        except Exception as e:
-            logger.exception(f"Ошибка при проверке прав администратора для {user_id}:")
-            logger.error(f"Тип ошибки: {type(e).__name__}, сообщение: {str(e)}")
+        Returns:
+            bool: True если пользователь имеет права администратора
+        """
+        if not isinstance(update, types.Message):
             return False
             
-    logger.error("Не удалось получить сессию базы данных")
-    return False
+        user_id = update.from_user.id
+        return await is_admin(user_id)
 
-
-# Создаем кастомный фильтр
-class AdminFilter(Filter):
-    async def __call__(self, message: types.Message) -> bool:
-        return await is_admin(message.from_user.id)
+async def is_admin(user_id: int) -> bool:
+    """Проверяет наличие административных прав у пользователя.
+    
+    Args:
+        user_id: Telegram ID пользователя для проверки
+        
+    Returns:
+        bool: Статус администратора пользователя
+        
+    Raises:
+        RuntimeError: При критических ошибках подключения к БД
+    """
+    logger.debug("Проверка прав администратора для пользователя {}", user_id)
+    
+    try:
+        async with async_session() as session:
+            session = cast(AsyncSession, session)
+            result = await session.execute(
+                select(User.is_admin)
+                .where(User.telegram_id == user_id)
+                .limit(1)
+            )
+            user: Optional[bool] = result.scalar_one_or_none()
+            
+            if user is None:
+                logger.warning("Пользователь {} не найден", user_id)
+                return False
+                
+            logger.info(
+                "Статус администратора для {}: {}",
+                user_id,
+                "GRANTED" if user else "DENIED"
+            )
+            return user
+            
+    except Exception as exc:
+        logger.opt(exception=True).critical(
+                "КРИТИЧЕСКАЯ ОШИБКА при проверке прав администратора\n"
+                "User ID: {}\n"
+                "Exception Type: {}\n"
+                "Exception Message: {}\n"
+                "Stack Trace:",
+                user_id,
+                type(exc).__name__,
+                str(exc)
+            )
+        return False

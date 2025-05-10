@@ -1,19 +1,45 @@
-import psutil
+"""
+Модуль утилит для работы с системной статистикой и пользователями
+
+Содержит функции для:
+- Сбора информации о системе и оборудовании
+- Форматирования данных пользователей
+- Экспорта данных в структурированные форматы
+"""
+
+import os
 import platform
 from datetime import datetime
-import GPUtil
-from typing import Optional
-from loguru import logger
-import tempfile
-import os
-from bot.models import User
-import pandas as pd
 from textwrap import dedent
+from typing import List, Optional, Dict, Any
+import tempfile
 
-def bytes_to_gb(bytes: int) -> float:
-    return bytes / (1024 ** 3)
+import GPUtil
+import pandas as pd
+import psutil
+from loguru import logger
+
+from bot.models import User
+
+
+def bytes_to_gb(bytes_value: int) -> float:
+    """Конвертирует байты в гигабайты.
+    
+    Args:
+        bytes_value: Значение в байтах
+        
+    Returns:
+        Значение в гигабайтах с плавающей точкой
+    """
+    return bytes_value / (1024 ** 3)
+
 
 def get_gpu_info() -> Optional[str]:
+    """Получает и форматирует информацию о GPU.
+    
+    Returns:
+        Строка с информацией о видеокартах или None при ошибке
+    """
     try:
         gpus = GPUtil.getGPUs()
         if not gpus:
@@ -27,150 +53,198 @@ def get_gpu_info() -> Optional[str]:
                 f"   ▪️VRAM: {gpu.memoryUsed:.1f}/{gpu.memoryTotal:.1f} GB"
             )
         return "\n".join(gpu_info)
-    except Exception as e:
-        print(f"⚠️ Error getting GPU info: {e}")
+    except Exception as exc:
+        logger.error(f"Ошибка получения данных GPU: {exc}")
         return None
 
-def get_system_stats() -> str:
-    # CPU
-    cpu_percent = psutil.cpu_percent(interval=1)
-    cpu_freq = psutil.cpu_freq()
-    cpu_cores = psutil.cpu_count(logical=False)
-    cpu_threads = psutil.cpu_count(logical=True)
-    
-    # Memory
-    mem = psutil.virtual_memory()
-    swap = psutil.swap_memory()
-    
-    # Disk
-    disk = psutil.disk_usage('/')
-    
-    # Network
-    net_io = psutil.net_io_counters()
-    
-    # Temperatures
-    try:
-        temps = psutil.sensors_temperatures()
-    except AttributeError:
-        temps = None
-    
-    # Boot Time
-    boot_time = datetime.fromtimestamp(psutil.boot_time())
-    
-    # GPU Info
-    gpu_stats = get_gpu_info()
-    
-    # Форматирование
-    stats = [
-        "🖥️ *System Statistics* 🖥️",
-        f"⏰ Boot Time: `{boot_time.strftime('%Y-%m-%d %H:%M:%S')}`",
-        f"🔧 OS: `{platform.system()} {platform.release()}`",
-        "",
-        "🔥 *CPU Usage* 🔥",
-        f"▪️ Total Usage: `{cpu_percent}%`",
-        f"▪️ Cores: `{cpu_cores}` | Threads: `{cpu_threads}`",
-        f"▪️ Frequency: `{cpu_freq.current:.2f} MHz`" if cpu_freq else "",
-        "",
-        "💾 *Memory Usage* 💾",
-        f"▪️ Total: `{bytes_to_gb(mem.total):.2f} GB`",
-        f"▪️ Used: `{bytes_to_gb(mem.used):.2f} GB` (`{mem.percent}%`)",
-        f"▪️ Available: `{bytes_to_gb(mem.available):.2f} GB`",
-        f"🔄 Swap: `{bytes_to_gb(swap.used):.2f}/{bytes_to_gb(swap.total):.2f} GB` (`{swap.percent}%`)",
-        "",
-        "💽 *Disk Usage* 💽",
-        f"▪️ Total: `{bytes_to_gb(disk.total):.2f} GB`",
-        f"▪️ Used: `{bytes_to_gb(disk.used):.2f} GB` (`{disk.percent}%`)",
-        f"▪️ Free: `{bytes_to_gb(disk.free):.2f} GB`",
-        "",
-        "🌐 *Network* 🌐",
-        f"📤 Sent: `{bytes_to_gb(net_io.bytes_sent):.2f} GB`",
-        f"📥 Received: `{bytes_to_gb(net_io.bytes_recv):.2f} GB`",
-    ]
-    
-    # GPU
-    if gpu_stats:
-        stats.extend(["", "🎮 *GPU Info* 🎮", gpu_stats])
-    
-    # Temperature
-    if temps:
-        stats.extend(["", "🌡️ *Temperatures* 🌡️"])
-        for name, entries in temps.items():
-            for entry in entries:
-                stats.append(f"▪️ {entry.label or name}: `{entry.current}°C`")
-    
-    return "\n".join(stats)
 
-async def format_users_table(users: list[User]) -> str:
-    """Форматирует список пользователей в красивую текстовую таблицу"""
-    # Заголовки столбцов
-    headers = ["ID", "Telegram ID", "Username", "Admin", "Created", "Last Active"]
+def get_system_stats() -> str:
+    """Собирает и форматирует комплексную статистику системы.
     
-    # Максимальные ширины столбцов
-    widths = [4, 12, 15, 5, 19, 19]
+    Returns:
+        Строка с отформатированной статистикой в Markdown
+    """
+    stats: List[str] = []
     
-    # Форматирование заголовка
-    header = "|".join(f" {h.ljust(w)} " for h, w in zip(headers, widths))
-    separator = "+".join("-" * (w + 2) for w in widths)
+    try:
+        # CPU Information
+        cpu_percent = psutil.cpu_percent(interval=1)
+        cpu_freq = psutil.cpu_freq()
+        cpu_cores = psutil.cpu_count(logical=False) or 0
+        cpu_threads = psutil.cpu_count(logical=True) or 0
+
+        # Memory Information
+        mem = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+
+        # Disk Information
+        disk = psutil.disk_usage('/')
+
+        # Network Information
+        net_io = psutil.net_io_counters()
+
+        # System Information
+        boot_time = datetime.fromtimestamp(psutil.boot_time())
+        os_info = f"{platform.system()} {platform.release()}"
+
+        # Формирование базовой статистики
+        stats = [
+            "🖥️ *System Statistics* 🖥️",
+            f"⏰ Boot Time: `{boot_time.strftime('%Y-%m-%d %H:%M:%S')}`",
+            f"🔧 OS: `{os_info}`",
+            "",
+            "🔥 *CPU Usage* 🔥",
+            f"▪️ Total Usage: `{cpu_percent}%`",
+            f"▪️ Cores: `{cpu_cores}` | Threads: `{cpu_threads}`",
+            f"▪️ Frequency: `{cpu_freq.current:.2f} MHz`" if cpu_freq else "",
+        ]
+
+        # Добавление секций данных
+        sections: List[Dict[str, Any]] = [
+            {
+                "title": "💾 Memory Usage",
+                "items": [
+                    ("Total", mem.total),
+                    ("Used", mem.used),
+                    ("Available", mem.available)
+                ]
+            },
+            {
+                "title": "💽 Disk Usage",
+                "items": [
+                    ("Total", disk.total),
+                    ("Used", disk.used),
+                    ("Free", disk.free)
+                ]
+            },
+            {
+                "title": "🌐 Network",
+                "items": [
+                    ("Sent", net_io.bytes_sent),
+                    ("Received", net_io.bytes_recv)
+                ]
+            }
+        ]
+
+        # Обработка секций
+        for section in sections:
+            stats.extend(["", f"{section['title']} {section['title'][0]}"])
+            for label, value in section["items"]:
+                stats.append(
+                    f"▪️ {label}: `{bytes_to_gb(value):.2f} GB`"
+                )
+
+        # GPU Information
+        if gpu_stats := get_gpu_info():
+            stats.extend(["", "🎮 *GPU Info* 🎮", gpu_stats])
+
+        # Temperature Information
+        if temps := psutil.sensors_temperatures():
+            stats.extend(["", "🌡️ *Temperatures* 🌡️"])
+            for name, entries in temps.items():
+                for entry in entries:
+                    stats.append(f"▪️ {entry.label or name}: `{entry.current}°C`")
+
+    except Exception as exc:
+        logger.error(f"Ошибка сбора статистики: {exc}")
+        return "⚠️ Ошибка получения системной информации"
+
+    return "\n".join(filter(None, stats))
+
+
+async def format_users_table(users: List[User]) -> str:
+    """Форматирует список пользователей в текстовую таблицу.
     
-    # Форматирование строк данных
+    Args:
+        users: Список объектов User
+        
+    Returns:
+        Отформатированная таблица в Markdown
+    """
+    logger.info("Форматирование таблицы пользователей")
+    
+    columns = [
+        ("ID", 4, lambda u: str(u.id)),
+        ("Telegram ID", 12, lambda u: str(u.telegram_id)),
+        ("Username", 15, lambda u: (u.username or "-")[:14]),
+        ("Admin", 5, lambda u: "✓" if u.is_admin else "✗"),
+        ("Created", 19, lambda u: u.created_at.strftime("%Y-%m-%d %H:%M")),
+        ("Last Active", 19, lambda u: u.last_activity.strftime("%Y-%m-%d %H:%M") 
+            if u.last_activity else "Never")
+    ]
+
+    # Создание заголовков
+    header = "|".join(f" {col[0].ljust(col[1])} " for col in columns)
+    separator = "+".join("-" * (col[1] + 2) for col in columns)
+    
+    # Генерация строк
     rows = []
     for user in users:
-        created = user.created_at.strftime("%Y-%m-%d %H:%M")
-        last_active = user.last_activity.strftime("%Y-%m-%d %H:%M") if user.last_activity else "Never"
-        
-        row = (
-            str(user.id).ljust(widths[0]),
-            str(user.telegram_id).ljust(widths[1]),
-            (user.username or "-")[:widths[2]-1].ljust(widths[2]),
-            "✓" if user.is_admin else "✗".center(widths[7]),
-            created.ljust(widths[4]),
-            last_active.ljust(widths[5])
+        row = "|".join(
+            f" {str(col[2](user)).ljust(col[1])} " 
+            for col in columns
         )
-        rows.append("|".join(f" {cell} " for cell in row))
-    
-    # Сборка полной таблицы
+        rows.append(row)
+        
+    data = "\n".join(rows)
+
     return dedent(f"""
-        ``` 
+        ```
         Пользователи системы ({len(users)})
         {separator}
         {header}
         {separator}
-        {chr(10).join(rows)}
+        {data}
         {separator}
         ```
     """).strip()
 
-def generate_users_dataframe(users: list[User]) -> pd.DataFrame:
-    """Создает DataFrame с информацией о пользователях"""
-    logger.debug("Создание DataFrame пользователей")
+
+def generate_users_dataframe(users: List[User]) -> pd.DataFrame:
+    """Генерирует DataFrame из списка пользователей.
     
-    data = []
-    for user in users:
-        data.append({
-            "ID": user.id,
-            "Telegram ID": user.telegram_id,
-            "Username": user.username or "-",
-            "Admin": "Да" if user.is_admin else "Нет",
-            "Created At": user.created_at.strftime("%Y-%m-%d %H:%M"),
-            "Last Activity": user.last_activity.strftime("%Y-%m-%d %H:%M") if user.last_activity else "Никогда"
-        })
+    Args:
+        users: Список объектов User
+        
+    Returns:
+        DataFrame с данными пользователей
+    """
+    logger.info("Создание DataFrame для {} пользователей", len(users))
     
-    df = pd.DataFrame(data)
-    logger.success(f"DataFrame создан с {len(df)} записями")
-    return df
+    data = [{
+        "ID": user.id,
+        "Telegram ID": user.telegram_id,
+        "Username": user.username or "-",
+        "Admin": "Да" if user.is_admin else "Нет",
+        "Created At": user.created_at.strftime("%Y-%m-%d %H:%M"),
+        "Last Activity": user.last_activity.strftime("%Y-%m-%d %H:%M") 
+            if user.last_activity else "Никогда"
+    } for user in users]
+
+    return pd.DataFrame(data)
+
 
 def save_users_to_csv(df: pd.DataFrame) -> str:
-    """Сохраняет DataFrame в CSV файл и возвращает путь к файлу"""
+    """Сохраняет DataFrame в CSV файл.
+    
+    Args:
+        df: DataFrame для сохранения
+        
+    Returns:
+        Путь к сохраненному файлу
+        
+    Raises:
+        IOError: При ошибках записи файла
+    """
+    fd, path = None, None
     try:
-        # Создаем временный файл
         fd, path = tempfile.mkstemp(suffix=".csv")
-        os.close(fd)
-        
-        # Сохраняем в CSV с правильной кодировкой
         df.to_csv(path, index=False, encoding='utf-8-sig')
-        logger.info(f"Данные сохранены в CSV файл: {path}")
+        logger.success("CSV сохранен: {}", path)
         return path
-        
-    except Exception as e:
-        logger.error(f"Ошибка сохранения CSV: {str(e)}")
-        raise
+    except Exception as exc:
+        logger.error("Ошибка сохранения CSV: {}", exc)
+        raise IOError("Ошибка записи CSV файла") from exc
+    finally:
+        if fd:
+            os.close(fd)
