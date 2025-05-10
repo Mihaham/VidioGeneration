@@ -1,0 +1,69 @@
+services:
+  sd-webui:
+    build:
+      context: ./stable-diffusion
+      dockerfile: sd.DockerFile
+    container_name: sd_webui_back
+    networks:
+      - sd-network
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./stable-diffusion/models:/app/stable-diffusion-webui/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  postgres:
+    build:
+      context: ./telegram-bot/database  # Путь к папке с Dockerfile для Postgres
+      dockerfile: Dockerfile
+    container_name: postgres_container
+    networks:
+      - sd-network
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./telegram-bot/database/.env  # Путь к .env файлу для Postgres
+    volumes:
+      - type: bind
+        source: ./telegram-bot/database/postgres_data  # Папка для данных на хосте
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  telegram-bot:
+    build:
+      context: ./telegram-bot
+      dockerfile: bot.DockerFile
+    container_name: sd_webui_bot
+    networks:
+      - sd-network
+    volumes:
+      - ./telegram-bot/logs:/app/logs
+      - ./telegram-bot/output:/app/output
+    env_file:
+      - ./telegram-bot/.env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    command: sh -c "exec python main.py"
+    #command: sh -c "sleep 100 && exec python main.py"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  sd-network:
+    driver: bridge
