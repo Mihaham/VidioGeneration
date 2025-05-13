@@ -3,6 +3,7 @@ from typing import List
 from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
 from videogeneration.utils import get_next_free_path
 from loguru import logger
+from bot.logger_setup import LoguruMoviePyLogger
 
 def compile_video(first_page: str, photos: List[str], audio: str) -> str:
     # Константы для настройки длительности и FPS
@@ -34,7 +35,7 @@ def compile_video(first_page: str, photos: List[str], audio: str) -> str:
 
     logger.info(f"Saving video into path : {OUTPUT_PATH}")
     # Сохраняем результат
-    video.write_videofile(OUTPUT_PATH, fps=FPS, verbose=True, logger=None)
+    video.write_videofile(OUTPUT_PATH, fps=FPS, verbose=True, logger="bar")
 
 
     logger.success(f"Compiled video!") 

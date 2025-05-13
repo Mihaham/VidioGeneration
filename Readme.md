@@ -119,4 +119,4 @@ docker-compose up -d --build
 
 Email: misha19102005@yandex.ru
 
-Telegram: [@MihahamYT]
+Telegram: [@MihahamYT](MihahamYT)

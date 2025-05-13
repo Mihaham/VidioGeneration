@@ -18,24 +18,24 @@ RUN apt-get update && \
 FROM builder AS requirements_installer
 
 WORKDIR /app
-RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui
+RUN git clone --branch v1.10.1 --depth 1 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 WORKDIR /app/stable-diffusion-webui
 
 # Create and setup virtual environment
-RUN python3 -m venv --copies venv
-RUN venv/bin/python -m pip install --upgrade pip && \
-    venv/bin/python -m pip install \
+RUN python3 -m venv venv
+RUN venv/bin/python -m pip install \
     -r requirements.txt \
     -r requirements_npu.txt \
     -r requirements-test.txt \
     -r requirements_versions.txt \
     xformers==0.0.23.post1 \
-    torchvision==0.16.2 \
-    git+https://github.com/openai/CLIP.git
+    torchvision==0.16.2
+
+RUN venv/bin/python -m pip install git+https://github.com/openai/CLIP.git
 
 # Stage 2: Runtime stage
-FROM requirements_installer
+FROM requirements_installer AS starter
 
 # Install runtime dependencies
 RUN apt-get update && \
@@ -50,7 +50,7 @@ WORKDIR /app/stable-diffusion-webui
 
 # Configure environment
 RUN echo "#!/bin/bash\n\
-export COMMANDLINE_ARGS='--listen --api --api-log --administrator --lowvram --xformers'" > webui-user.sh 
+export COMMANDLINE_ARGS='--listen --api --api-log --administrator --xformers'" > webui-user.sh
 
 EXPOSE 7860
 

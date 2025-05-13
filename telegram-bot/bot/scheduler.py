@@ -1,71 +1,175 @@
-from apscheduler.triggers.cron import CronTrigger
-from bot.config import TIMEZONE
-from loguru import logger
+"""
+Модуль планировщика задач и обработки видео
+
+Содержит:
+- Задачи для cron-расписания
+- Генерацию и отправку видео контента
+- Управление медиагруппами
+- Интеграцию с внешними хранилищами
+"""
+
 import asyncio
-from moviepy.editor import VideoFileClip
-from aiogram.types import FSInputFile
-from videogeneration.main import generate_video
-from aiogram.utils.media_group import MediaGroupBuilder
 import time
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+from aiogram import Bot
+from aiogram.types import FSInputFile
+from aiogram.utils.media_group import MediaGroupBuilder
+from apscheduler.job import Job
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from loguru import logger
+from moviepy.editor import VideoFileClip
+
+from bot.config import TIMEZONE
+from videogeneration.main import generate_video
 from videogeneration.upload_video import upload_video
 
-async def get_video_duration(video_path):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, lambda: VideoFileClip(video_path).duration)
+async def get_video_duration(video_path: Path) -> float:
+    """Получает продолжительность видеофайла в секундах.
+    
+    Args:
+        video_path: Путь к видеофайлу
+        
+    Returns:
+        Продолжительность видео в секундах
+    """
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None, 
+        lambda: VideoFileClip(str(video_path)).duration
+    )
 
-async def send_photos_group(bot, user_id, photos_paths):
+async def send_photos_group(bot: Bot, user_id: int, photos_paths: List[Path]) -> None:
+    """Отправляет группу фотографий с интервалами.
+    
+    Args:
+        bot: Экземпляр Telegram бота
+        user_id: ID пользователя для отправки
+        photos_paths: Список путей к изображениям
+    """
     for i in range(0, len(photos_paths), 10):
         chunk = photos_paths[i:i+10]
-        media_group = MediaGroupBuilder(
-            caption=f"Media group {i}")
-        for photo in chunk :
-            media_group.add_photo(type="photo", media=FSInputFile(photo))
-        await bot.send_media_group(chat_id=user_id, media=media_group.build())
-        time.sleep(5)
-
-async def send_scheduled_message(bot, user_id : int, upload : bool = True):
-    await bot.send_message(chat_id = user_id, text="Начинаю запланированную генерацию видео")
-    video_path, photos_paths = None, None
-    while True:
-        video_path, photos_paths, title = await asyncio.get_event_loop().run_in_executor(None, generate_video)
+        media_group = MediaGroupBuilder(caption=f"Медиагруппа {i//10 + 1}")
+        
+        for photo in chunk:
+            media_group.add_photo(media=FSInputFile(photo))
         
         try:
+            await bot.send_media_group(
+                chat_id=user_id,
+                media=media_group.build()
+            )
+            await asyncio.sleep(5)  # Асинхронная задержка
+        except Exception as exc:
+            logger.error("Ошибка отправки медиагруппы: {}", exc)
+
+async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) -> None:
+    """Основная задача для генерации и отправки видео.
+    
+    Args:
+        bot: Экземпляр Telegram бота
+        user_id: ID пользователя для отправки
+        upload: Флаг загрузки на внешнее хранилище
+    """
+    logger.info("Начало запланированной генерации видео")
+    await bot.send_message(chat_id=user_id, text="⏳ Начинаю генерацию видео...")
+    
+    video_path: Optional[Path] = None
+    photos_paths: List[Path] = []
+    
+    try:
+        while True:
+            # Генерация видео
+            result = await asyncio.to_thread(generate_video)
+            video_path, photos_paths, title = result
+            video_path = Path(video_path)
+            
+            if not video_path.exists():
+                raise FileNotFoundError(f"Видео файл не найден: {video_path}")
+            
+            # Проверка продолжительности
             duration = await get_video_duration(video_path)
             duration_minutes = duration / 60
             
-            # Отправка видео
-            await bot.send_video(chat_id=user_id, video=FSInputFile(video_path),caption="Video generated!")
-            
-            # Отправка фото
-            #await send_photos_group(bot, user_id, photos_paths)
-            
-            # Проверка длительности
-            if 0.5 < duration_minutes < 1:
-                break
-            else:
-                await bot.send_message(
+            try:
+                # Отправка видео
+                await bot.send_video(
                     chat_id=user_id,
-                    text="Длина видео не соответствует требованиям. Повторяю генерацию..."
+                    video=FSInputFile(video_path),
+                    caption="🎥 Видео сгенерировано!"
                 )
                 
-        except Exception as e:
-            await bot.send_message(chat_id=user_id, text=f"Произошла ошибка: {str(e)}")
-            continue
-        
-        finally:
-            # Очистка временных файлов (реализуйте при необходимости)
-            pass
-    if upload:
-        upload_video(video_path, title, privacy="public")
+                # Отправка фотографий (раскомментировать при необходимости)
+                # await send_photos_group(bot, user_id, photos_paths)
+                
+                if 0.5 < duration_minutes < 1:
+                    logger.success("Видео соответствует требованиям по длительности")
+                    break
+                
+                await bot.send_message(
+                    chat_id=user_id,
+                    text="⚠️ Длина видео не соответствует требованиям. Повторяю генерацию..."
+                )
+                
+            except Exception as send_exc:
+                logger.error("Ошибка отправки контента: {}", send_exc)
+                continue
 
-def setup_scheduler(scheduler, bot, user_id):
-    scheduler.add_job(
+    except Exception as gen_exc:
+        # Логируем исключение с полным трейсбэком
+        logger.opt(exception=True).critical(
+            "Критическая ошибка генерации (user_id={})",
+            user_id
+        )
+
+        # Формируем сообщение об ошибке
+        error_message = (
+            f"🚨 Критическая ошибка генерации:\n"
+            f"• Тип: {type(gen_exc).__name__}\n"
+            f"• Сообщение: {str(gen_exc)}\n"
+            f"• Файл: {gen_exc.__traceback__.tb_frame.f_code.co_filename}\n"
+            f"• Строка: {gen_exc.__traceback__.tb_lineno}"
+        )
+
+        await bot.send_message(
+            chat_id=user_id,
+            text=error_message
+        )
+                
+    if upload and video_path:
+        try:
+            video_id = upload_video(video_path, title, privacy="public")
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"Опубликовал видео https://www.youtube.com/watch?v={video_id}"
+            )
+            logger.success(f"Видео {video_id} успешно загружено на ютуб")
+        except Exception as upload_exc:
+            logger.error("Ошибка загрузки видео: {}", upload_exc)
+
+def setup_scheduler(scheduler: AsyncIOScheduler, bot: Bot, user_id: int) -> Job:
+    """Настраивает и добавляет задание в планировщик.
+    
+    Args:
+        scheduler: Экземпляр планировщика
+        bot: Экземпляр Telegram бота
+        user_id: ID пользователя для отправки
+        
+    Returns:
+        Созданное задание планировщика
+    """
+    return scheduler.add_job(
         send_scheduled_message,
-        CronTrigger(
-            day_of_week='tue,fri',
+        trigger=CronTrigger(
+            day_of_week="tue,fri",
             hour=12,
             minute=0,
             timezone=TIMEZONE
         ),
-        args=[bot, user_id]
+        args=[bot, user_id],
+        max_instances=1,
+        coalesce=True,
+        replace_existing=True
     )
