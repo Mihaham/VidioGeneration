@@ -116,27 +116,36 @@ async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) ->
             except Exception as send_exc:
                 logger.error("Ошибка отправки контента: {}", send_exc)
                 continue
-            
+
     except Exception as gen_exc:
-        logger.critical("Критическая ошибка генерации: {}", gen_exc)
+        # Логируем исключение с полным трейсбэком
+        logger.opt(exception=True).critical(
+            "Критическая ошибка генерации (user_id={})",
+            user_id
+        )
+
+        # Формируем сообщение об ошибке
+        error_message = (
+            f"🚨 Критическая ошибка генерации:\n"
+            f"• Тип: {type(gen_exc).__name__}\n"
+            f"• Сообщение: {str(gen_exc)}\n"
+            f"• Файл: {gen_exc.__traceback__.tb_frame.f_code.co_filename}\n"
+            f"• Строка: {gen_exc.__traceback__.tb_lineno}"
+        )
+
         await bot.send_message(
             chat_id=user_id,
-            text=f"🚨 Ошибка генерации видео: {gen_exc}"
+            text=error_message
         )
-        
-    finally:
-        # Очистка временных файлов
-        if video_path and video_path.exists():
-            video_path.unlink(missing_ok=True)
-        for photo in photos_paths:
-            photo = Path(photo)
-            if photo.exists():
-                photo.unlink(missing_ok=True)
                 
     if upload and video_path:
         try:
-            await upload_video(video_path, title, privacy="public")
-            logger.success("Видео успешно загружено на внешнее хранилище")
+            video_id = upload_video(video_path, title, privacy="public")
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"Опубликовал видео https://www.youtube.com/watch?v={video_id}"
+            )
+            logger.success(f"Видео {video_id} успешно загружено на ютуб")
         except Exception as upload_exc:
             logger.error("Ошибка загрузки видео: {}", upload_exc)
 

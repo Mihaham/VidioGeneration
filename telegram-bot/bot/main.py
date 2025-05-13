@@ -17,7 +17,7 @@ from aiogram.types import User
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.util import undefined
 
-from bot.config import TIMEZONE, TOKEN, USER_ID
+from bot.config import TIMEZONE, TOKEN, USER_ID, NEED_SHEDULER
 from bot.handlers import admin, common, memory_handler
 from bot.logger_setup import logger
 from bot.scheduler import setup_scheduler
@@ -55,18 +55,19 @@ async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
         logger.critical("Ошибка инициализации бота: {}", exc)
         raise RuntimeError("Bot initialization failed") from exc
 
-    # Настройка планировщика
-    try:
-        setup_scheduler(scheduler, bot, USER_ID)
-        if scheduler.state == 0:  # type: ignore
-            scheduler.start()
-            logger.info(
-                "Планировщик запущен (временная зона: {tz})",
-                tz=TIMEZONE.zone
-            )
-    except Exception as exc:
-        logger.critical("Ошибка запуска планировщика: {}", exc)
-        raise
+    if NEED_SHEDULER:
+        # Настройка планировщика
+        try:
+            setup_scheduler(scheduler, bot, USER_ID)
+            if scheduler.state == 0:  # type: ignore
+                scheduler.start()
+                logger.info(
+                    "Планировщик запущен (временная зона: {tz})",
+                    tz=TIMEZONE.zone
+                )
+        except Exception as exc:
+            logger.critical("Ошибка запуска планировщика: {}", exc)
+            raise
 
 async def main() -> None:
     """Основная точка входа для запуска приложения."""

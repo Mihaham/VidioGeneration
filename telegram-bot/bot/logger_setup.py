@@ -81,6 +81,75 @@ def setup_logger() -> None:
     finally:
         logger.success("Логгер сконфигурирован")
 
+class LoguruMoviePyLogger:
+    """
+    Адаптер для перенаправления логов moviepy в loguru
+    """
+
+    def __init__(self):
+        """Инициализация без аргументов"""
+        pass
+
+    def debug(self, msg):
+        """Обработка debug-сообщений"""
+        logger.debug(msg)
+
+    def info(self, msg):
+        """Обработка info-сообщений"""
+        logger.info(msg)
+
+    def warning(self, msg):
+        """Обработка предупреждений"""
+        logger.warning(msg)
+
+    def error(self, msg):
+        """Обработка ошибок"""
+        logger.error(msg)
+
+    def critical(self, msg):
+        """Обработка критических ошибок"""
+        logger.critical(msg)
+
+    # Для совместимости с некоторыми версиями moviepy
+    def write(self, buf):
+        """Перехват буферизированных записей"""
+        for line in buf.rstrip().splitlines():
+            logger.debug(line.rstrip())
+
+    # Метод-заглушка для обработки прогресса
+    def progress(self, current, total):
+        """Логирование прогресса (если требуется)"""
+        logger.info(f"Прогресс рендеринга: {current}/{total} ({current/total:.1%})")
+
+    def flush(self):
+        """Метод для совместимости с файлоподобными объектами"""
+        pass
+
+    def __call__(self, *args, **kwargs):
+        # Every time the logger message is updated, this function is called with
+        # the `changes` dictionary of the form `parameter: new value`.
+        logger.debug(f"__call__ called with {args}, {kwargs}")
+        if kwargs:
+            for (parameter, value) in kwargs.items():
+                logger.debug('Parameter %s is now %s' % (parameter, value))
+        if args:
+            for parametr in args:
+                logger.debug(f"Got parametr {parametr}")
+
+    def iter_bar(self, *args, **kwargs):
+        logger.debug(f"Iter_bar called with {args}, {kwargs}")
+        if kwargs:
+            for (parameter, value) in kwargs.items():
+                logger.debug('Parameter %s is now %s' % (parameter, value))
+        if args:
+            for parametr in args:
+                logger.debug(f"Got parametr {parametr}")
+
+
+    def bars_callback(self, bar, attr, value, old_value=None):
+        # Every time the logger progress is updated, this function is called
+        logger.info(f"bars_callback: {bar}, {attr}, {value}, {old_value}")
+
 
 # Инициализация при импорте модуля
 try:
@@ -88,3 +157,4 @@ try:
 except Exception as exc:
     logger.critical(f"Критическая ошибка при настройке логгера: {exc}")
     sys.exit(1)
+

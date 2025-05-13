@@ -4,6 +4,7 @@ services:
       context: ./stable-diffusion
       dockerfile: sd.DockerFile
     container_name: sd_webui_back
+    image: sd_webui_back:latest
     networks:
       - sd-network
     ports:
@@ -23,6 +24,7 @@ services:
       context: ./telegram-bot/database  # Путь к папке с Dockerfile для Postgres
       dockerfile: Dockerfile
     container_name: postgres_container
+    image: postgres_container:latest
     networks:
       - sd-network
     ports:
@@ -44,11 +46,13 @@ services:
       context: ./telegram-bot
       dockerfile: bot.DockerFile
     container_name: sd_webui_bot
+    image: sd_webui_bot:latest
     networks:
       - sd-network
     volumes:
       - ./telegram-bot/logs:/app/logs
       - ./telegram-bot/output:/app/output
+      - ./telegram-bot/token.json:/app/token.json
     env_file:
       - ./telegram-bot/.env
     restart: unless-stopped

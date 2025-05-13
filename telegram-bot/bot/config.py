@@ -27,6 +27,7 @@ TOKEN: str = os.getenv('BOT_TOKEN')
 USER_ID: str = os.getenv('USER_ID')
 DEFAULT_TZ = 'Europe/Moscow'
 TIMEZONE_NAME: str = os.getenv('TZ', DEFAULT_TZ)
+NEED_SHEDULER: bool = True
 
 # Валидация обязательных параметров
 missing_vars = []

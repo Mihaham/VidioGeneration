@@ -101,8 +101,8 @@ async def handle_video_generation(message: types.Message, bot: Bot) -> None:
     
     try:
         await send_scheduled_message(bot=bot, user_id=USER_ID, upload=upload)
-        status = "запущена" if upload else "запущена без загрузки"
-        await message.answer(f"✅ Генерация видео {status}")
+        #status = "запущена" if upload else "запущена без загрузки"
+        #await message.answer(f"✅ Генерация видео {status}")
         logger.success("Video generation started by user {}", user_id)
     except Exception as exc:
         logger.error("Video generation failed for user {}: {}", user_id, exc)

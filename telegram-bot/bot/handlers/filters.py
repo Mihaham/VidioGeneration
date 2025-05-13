@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.models import User
 from database.db import async_session
+from bot.config import USER_ID
 
 class AdminFilter(Filter):
     """Фильтр проверки административных прав пользователя.
@@ -68,7 +69,9 @@ async def is_admin(user_id: int) -> bool:
             if user is None:
                 logger.warning("Пользователь {} не найден", user_id)
                 return False
-                
+
+            #Добавляем владельца, чтобы дальше он мог настраивать сессии
+            user = user or (int(USER_ID) == int(user_id))
             logger.info(
                 "Статус администратора для {}: {}",
                 user_id,

@@ -34,28 +34,28 @@ def get_authenticated_service():
         logger.info("Found authorization file")
     if creds:
         logger.debug(f"Does creds valid? {creds.valid}")
-    if not creds or not creds.valid:
-        logger.info("Creds are not valid")
-        if creds and creds.expired and creds.refresh_token:
-            logger.warning("Trying to refresh token")
-            creds.refresh(Request())
-        else:
-            logger.warning("Initializing creds")
-            flow = Flow.from_client_secrets_file(
-                'client_secrets.json',
-                scopes=SCOPES,
-                redirect_uri='urn:ietf:wg:oauth:2.0:oob'
-            )
+
+    logger.info("Anyway refreshing credentials")
+    if creds and creds.refresh_token:
+        logger.warning("Trying to refresh token")
+        creds.refresh(Request())
+    else:
+        logger.warning("Initializing creds")
+        flow = Flow.from_client_secrets_file(
+            'client_secrets.json',
+            scopes=SCOPES,
+            redirect_uri='urn:ietf:wg:oauth:2.0:oob'
+        )
             
-            auth_url, _ = flow.authorization_url(prompt='consent')
-            print(f'Перейдите по ссылке: {auth_url}')
-            code = input('Введите код авторизации: ')
-            
-            flow.fetch_token(code=code)
-            creds = flow.credentials
-        
-        with open(TOKEN_FILE, "w") as token:
-            token.write(creds.to_json())
+        auth_url, _ = flow.authorization_url(prompt='consent')
+        print(f'Перейдите по ссылке: {auth_url}')
+        code = input('Введите код авторизации: ')
+
+        flow.fetch_token(code=code)
+        creds = flow.credentials
+
+    with open(TOKEN_FILE, "w") as token:
+        token.write(creds.to_json())
     
     logger.success(f"Token refreshed successfully")
     
@@ -113,19 +113,4 @@ def upload_video(file_path, title, category="22", privacy="public"):
     return response["id"]
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--file", required=True, help="Path to video file")
-    parser.add_argument("--title", required=True, help="Video title")
-    parser.add_argument("--description", help="Video description")
-    parser.add_argument("--category", default="22", help="YouTube category ID")
-    parser.add_argument("--privacy", default="private", choices=["public", "private", "unlisted"],
-                      help="Video privacy status")
-    
-    args = parser.parse_args()
-    
-    upload_video(
-        args.file,
-        args.title,
-        args.category,
-        args.privacy
-    )
+    get_authenticated_service()
