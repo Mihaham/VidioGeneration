@@ -25,6 +25,7 @@ from aiogram.types import FSInputFile, Message
 from loguru import logger
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
+from html import escape
 
 from bot.config import USER_ID
 from bot.handlers.filters import AdminFilter, is_admin
@@ -243,7 +244,7 @@ async def logs_handler(message: types.Message) -> None:
             + (f"\n\n🚨 Последние ошибки:\n{''.join(error_logs[-5])}" if error_logs else "")
         )
         
-        await message.answer(f"<code>{stats_text}</code>", parse_mode="HTML")
+        await message.answer(f"<code>{escape(stats_text)}</code>", parse_mode="HTML")
         await message.answer_document(
             document=FSInputFile(tmp_path, filename="recent.log"),
             caption="📎 Последние логи системы"
