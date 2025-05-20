@@ -78,12 +78,13 @@ async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) ->
     
     video_path: Optional[Path] = None
     photos_paths: List[Path] = []
+    title, description = "", ""
     
     try:
         while True:
             # Генерация видео
             result = await asyncio.to_thread(generate_video)
-            video_path, photos_paths, title = result
+            video_path, photos_paths, title, description = result
             video_path = Path(video_path)
             
             if not video_path.exists():
@@ -140,7 +141,7 @@ async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) ->
                 
     if upload and video_path:
         try:
-            video_id = upload_video(video_path, title, privacy="public")
+            video_id = upload_video(video_path, title=title, privacy="public", description=description)
             await bot.send_message(
                 chat_id=user_id,
                 text=f"Опубликовал видео https://www.youtube.com/watch?v={video_id}"

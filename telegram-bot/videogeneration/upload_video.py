@@ -20,7 +20,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtubepartner"]
 TOKEN_FILE = "token.json"
 RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, httplib2.ServerNotFoundError,)
 RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
@@ -61,20 +61,34 @@ def get_authenticated_service():
     
     return build("youtube", "v3", credentials=creds)
 
-def upload_video(file_path, title, category="22", privacy="public"):
+def upload_video(file_path, title, category="1", privacy="public", madeForKids=False, description="", defaultAudioLanguage="RU", defaultLanguage="RU"):
     logger.info(f"Starting uploading video {file_path} with title {title} to category {category} with privacy {privacy}")
     youtube = get_authenticated_service()
-    
+
     body = {
-        "snippet": {
-            "title": title,
-            "categoryId": category,
-            "description": "",
-        },
-        "status": {
-            "privacyStatus": privacy
-        }
+      "status": {
+        "madeForKids": madeForKids,
+        "privacyStatus": privacy
+
+      },
+      "snippet": {
+        "title": title[:99],
+        "categoryId": category,
+        "tags":  [
+            "NeuroArt", "ArtificialIntelligence", "IdeaGeneration", "AIVideo",
+            "DigitalCreativity", "NeuroImagery", "FuturisticDesign", "AIVoiceover",
+            "InnovationInArt", "VirtualWorlds", "AICreativity", "FutureTech",
+            "PhotoGeneration", "AutomatedCreation", "NeuralNetworkArt", "DigitalArt",
+            "AIArt", "NeuroVideo", "AIGeneration", "ArtSynthesis"
+        ]  ,
+        "description": description[:5000],
+        "defaultAudioLanguage": defaultAudioLanguage,
+        "defaultLanguage": defaultLanguage
+
+      }
     }
+
+    logger.info(f"Uploading video with body: {body}")
     
     media = MediaFileUpload(file_path, chunksize=-1, resumable=True)
     

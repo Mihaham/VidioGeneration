@@ -53,8 +53,8 @@ def generate_sequential_variations(
     prompt: str,
     initial_photo: str,
     iterations: int = 5,
-    denoising_strength: float = 0.4,
-    delay_between_steps: float = 1.0
+    denoising_strength: float = 0.55,
+    delay_between_steps: float = 0.01
 ) -> List[str]:
     """
     Генерирует последовательные вариации изображения через цепочку img2img преобразований.
@@ -88,7 +88,7 @@ def generate_sequential_variations(
             base_params = {
                 "prompt": prompt,
                 "negative_prompt": "deformed, blurry, low quality, artifacts",
-                "steps": 20,
+                "steps": 50,
                 "width": 512,
                 "height": 768,
                 "cfg_scale": 7,
@@ -96,7 +96,7 @@ def generate_sequential_variations(
                 "seed": -1,
                 "resize_mode": 1,
                 "denoising_strength": max(0.3, min(denoising_strength, 0.6)),
-                "restore_faces": True
+                "restore_faces": False
             }
 
             # Цикл последовательной генерации
