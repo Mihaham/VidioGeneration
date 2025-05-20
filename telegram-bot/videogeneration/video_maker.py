@@ -8,7 +8,7 @@ from bot.logger_setup import LoguruMoviePyLogger
 def compile_video(first_page: str, photos: List[str], audio: str) -> str:
     # Константы для настройки длительности и FPS
     FIRST_DURATION = 1.0     # Длительность первого изображения (секунды)
-    OTHER_DURATION = 0.5     # Длительность остальных изображений (секунды)
+    OTHER_DURATION = 0.1     # Длительность остальных изображений (секунды)
     FPS = 24                 # Кадров в секунду
     OUTPUT_PATH = get_next_free_path("output/video", prefix="video_", suffix=".mp4")  # Путь для сохранения видео
     logger.debug(f"Compiling video")

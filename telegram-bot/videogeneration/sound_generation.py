@@ -185,7 +185,7 @@ def generate_audio_with_salut(prompt: str) -> str:
 
     generator.text_to_audio(generated_text, audio_path)
     
-    return str(audio_path)
+    return str(audio_path), generated_text
 
 if __name__ == "__main__":
     generator = SalutWrapper()
