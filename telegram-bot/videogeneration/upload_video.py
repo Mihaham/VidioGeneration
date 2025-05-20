@@ -75,11 +75,11 @@ def upload_video(file_path, title, category="1", privacy="public", madeForKids=F
         "title": title[:99],
         "categoryId": category,
         "tags":  [
-            "#NeuroArt", "#ArtificialIntelligence", "#IdeaGeneration", "#AIVideo",
-            "#DigitalCreativity", "#NeuroImagery", "#FuturisticDesign", "#AIVoiceover",
-            "#InnovationInArt", "#VirtualWorlds", "#AICreativity", "#FutureTech",
-            "#PhotoGeneration", "#AutomatedCreation", "#NeuralNetworkArt", "#DigitalArt",
-            "#AIArt", "#NeuroVideo", "#AIGeneration", "#ArtSynthesis"
+            "NeuroArt", "ArtificialIntelligence", "IdeaGeneration", "AIVideo",
+            "DigitalCreativity", "NeuroImagery", "FuturisticDesign", "AIVoiceover",
+            "InnovationInArt", "VirtualWorlds", "AICreativity", "FutureTech",
+            "PhotoGeneration", "AutomatedCreation", "NeuralNetworkArt", "DigitalArt",
+            "AIArt", "NeuroVideo", "AIGeneration", "ArtSynthesis"
         ]  ,
         "description": description[:5000],
         "defaultAudioLanguage": defaultAudioLanguage,
