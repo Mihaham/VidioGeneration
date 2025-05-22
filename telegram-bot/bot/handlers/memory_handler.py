@@ -61,6 +61,7 @@ async def update_user_and_message(
                 text=message_text[:4096]  # Ограничение длины текста
             )
             session.add(message)
+            await session.commit()
             
         logger.success("Данные успешно сохранены для {}", user_data.id)
     except Exception as exc:

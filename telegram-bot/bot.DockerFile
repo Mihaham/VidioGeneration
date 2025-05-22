@@ -28,6 +28,7 @@ RUN pip install sqlalchemy
 RUN pip install asyncpg
 RUN pip install pandas
 RUN pip install psutil gputil
+RUN pip install openpyxl
 
 COPY . .
 COPY main.py main.py

@@ -19,6 +19,9 @@ BTN_USERS_LIST = "👥 Пользователи"
 BTN_MAIN_MENU = "🔙 На главную"
 BTN_GEN_VIDEO_UPLOAD = "🎥 Сгенерировать видео (с загрузкой)"
 BTN_GEN_VIDEO_LOCAL = "🎥 Сгенерировать видео (без загрузки)"
+BTN_EXCEL_LIST = "📚 Экспорт в Excel"
+BTN_CSV_LISTS = "📚 Экспорт в CSV файлы"
+BTN_GENERATE = "💫 Хочу Сгенерировать что-нибудь..."
 
 def user_main_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
     """Создает основную клавиатуру пользователя с учетом прав администратора.
@@ -60,7 +63,11 @@ def admin_panel_kb() -> ReplyKeyboardMarkup:
     management_buttons: List[Tuple[KeyboardButton]] = [
         (KeyboardButton(text=BTN_SYS_STATS),),
         (KeyboardButton(text=BTN_ACTION_LOGS),),
-        (KeyboardButton(text=BTN_USERS_LIST),)
+        (KeyboardButton(text=BTN_USERS_LIST),),
+        (KeyboardButton(text=BTN_EXCEL_LIST),),
+        (KeyboardButton(text=BTN_CSV_LISTS),),
+        (KeyboardButton(text=BTN_GENERATE),),
+
     ]
     
     video_controls: List[Tuple[KeyboardButton]] = [

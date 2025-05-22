@@ -18,7 +18,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.util import undefined
 
 from bot.config import TIMEZONE, TOKEN, USER_ID, NEED_SHEDULER
-from bot.handlers import admin, common, memory_handler
+from bot.handlers import admin, common, memory_handler, generation, data
 from bot.logger_setup import logger
 from bot.scheduler import setup_scheduler
 from database.db import init_db
@@ -84,7 +84,7 @@ async def main() -> None:
         scheduler = AsyncIOScheduler(timezone=TIMEZONE)
         
         # Регистрация роутеров
-        routers = (memory_handler.memory_router, admin.router, common.router)
+        routers = (memory_handler.memory_router, admin.router, common.router, generation.image_router, data.router)
         for router in routers:
             dp.include_router(router)
         logger.debug("Зарегистрировано роутеров: {}", len(routers))
