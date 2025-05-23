@@ -65,6 +65,12 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    image_requests: Mapped[List[ImageGenerationRequest]] = relationship(
+        "ImageGenerationRequest",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
     def __repr__(self) -> str:
         return (
             f"<User(id={self.id}, "
@@ -113,3 +119,53 @@ class Message(Base):
             f"user_id={self.user_id}, "
             f"created_at={self.created_at.isoformat()})>"
         )
+
+
+class ImageGenerationRequest(Base):
+    """Модель запроса на генерацию изображения"""
+
+    __tablename__ = 'image_requests'
+
+    class Statuses:
+        PENDING = "pending"
+        PROCESSING = "processing"
+        COMPLETED = "completed"
+        FAILED = "failed"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    prompt: Mapped[str] = mapped_column(Text, comment="Основной промпт для генерации")
+    negative_prompt: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="Нежелательные элементы в изображении"
+    )
+    width: Mapped[int] = mapped_column(
+        Integer, default=512,
+        comment="Ширина изображения"
+    )
+    height: Mapped[int] = mapped_column(
+        Integer, default=512,
+        comment="Высота изображения"
+    )
+    n_iter: Mapped[int] = mapped_column(
+        Integer, default=1,
+        comment="Количество изображений"
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default=Statuses.PENDING,
+        comment="Статус обработки запроса"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow,
+        comment="Дата создания запроса"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow,
+        comment="Дата последнего обновления"
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey('users.telegram_id', ondelete="CASCADE"),
+        index=True,
+        comment="Связь с пользователем"
+    )
+
+    user: Mapped[User] = relationship(User, back_populates="image_requests")

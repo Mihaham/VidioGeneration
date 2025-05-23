@@ -48,6 +48,7 @@ async def start(message: types.Message) -> None:
                     username=username[:50]  # Обрезка до 50 символов
                 )
                 session.add(user)
+                await session.commit()
                 logger.success("Зарегистрирован новый пользователь: {}", username)
             else:
                 logger.debug("Пользователь уже существует: {}", username)

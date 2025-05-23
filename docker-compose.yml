@@ -58,8 +58,8 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
-    command: sh -c "exec python main.py"
-    #command: sh -c "sleep 100 && exec python main.py"
+    #command: sh -c "exec python main.py"
+    command: sh -c "sleep 20 && exec python main.py"
     deploy:
       resources:
         reservations:
