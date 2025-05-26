@@ -22,6 +22,7 @@ from bot.handlers import admin, common, memory_handler, generation, data
 from bot.logger_setup import logger
 from bot.scheduler import setup_scheduler
 from database.db import init_db
+from bot.middleware.database_middleware import DatabaseMiddleware
 
 async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
     """Выполняет инициализацию приложения при старте.
@@ -81,6 +82,9 @@ async def main() -> None:
         # Создание основных компонентов
         bot = Bot(token=TOKEN)
         dp = Dispatcher()
+
+        dp.update.middleware(DatabaseMiddleware())
+
         scheduler = AsyncIOScheduler(timezone=TIMEZONE)
         
         # Регистрация роутеров

@@ -97,9 +97,6 @@ async def export_all_tables_excel(message: Message):
                         result = await session.execute(select(model))
                         records = result.scalars().all()
 
-                        if not records:
-                            continue
-
                         df = model_to_dataframe(model, records)
                         df.to_excel(
                             writer,

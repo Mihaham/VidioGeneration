@@ -8,9 +8,9 @@
 
 from __future__ import annotations
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -71,6 +71,8 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    events: Mapped[List["Event"]] = relationship(back_populates="user")
+
     def __repr__(self) -> str:
         return (
             f"<User(id={self.id}, "
@@ -96,7 +98,7 @@ class Message(Base):
         comment="Текст сообщения пользователя"
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, 
+        DateTime(timezone=False),
         default=datetime.utcnow,
         index=True,
         comment="Дата создания сообщения"
@@ -169,3 +171,17 @@ class ImageGenerationRequest(Base):
     )
 
     user: Mapped[User] = relationship(User, back_populates="image_requests")
+
+
+class Event(Base):
+    __tablename__ = 'events'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(50))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+    details: Mapped[Optional[Dict]] = mapped_column(JSON)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+
+    user: Mapped[User] = relationship(back_populates="events")
