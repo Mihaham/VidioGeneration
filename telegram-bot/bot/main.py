@@ -8,12 +8,16 @@
 - Основной цикл работы бота
 """
 
+from bot.logger_setup import setup_logger
+#Конфигурирование логгера перед запуском всех частей бота
+setup_logger()
+
 import asyncio
 from contextlib import suppress
 from typing import Any, cast
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import User
+from aiogram.types import User, ReplyKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.util import undefined
 
@@ -23,6 +27,7 @@ from bot.logger_setup import logger
 from bot.scheduler import setup_scheduler
 from database.db import init_db
 from bot.middleware.database_middleware import DatabaseMiddleware
+from bot.handlers.keyboards import user_main_kb
 
 async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
     """Выполняет инициализацию приложения при старте.
@@ -48,7 +53,8 @@ async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
         # Отправка стартового уведомления
         await bot.send_message(
             chat_id=USER_ID,
-            text="🟢 Bot started ✔"
+            text="🟢 Bot started ✔",
+            reply_markup=user_main_kb(is_admin=True)
         )
         logger.debug("Стартовое уведомление отправлено")
         
@@ -72,6 +78,7 @@ async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
 
 async def main() -> None:
     """Основная точка входа для запуска приложения."""
+
     logger.info("Подготовка к запуску приложения")
     
     try:

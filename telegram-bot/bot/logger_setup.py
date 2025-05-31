@@ -150,11 +150,3 @@ class LoguruMoviePyLogger:
         # Every time the logger progress is updated, this function is called
         logger.info(f"bars_callback: {bar}, {attr}, {value}, {old_value}")
 
-
-# Инициализация при импорте модуля
-try:
-    setup_logger()
-except Exception as exc:
-    logger.critical(f"Критическая ошибка при настройке логгера: {exc}")
-    sys.exit(1)
-
