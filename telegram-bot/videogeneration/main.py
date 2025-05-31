@@ -3,6 +3,7 @@ from videogeneration.generations import generate_photo, generate_sequential_vari
 from videogeneration.firstpage import generate_first_page
 from videogeneration.sound_generation import generate_audio_with_salut
 from videogeneration.video_maker import compile_video
+from videogeneration.subtitles import add_subtitles_from_text
 from loguru import logger
 
 def generate_video():
@@ -12,7 +13,7 @@ def generate_video():
 
     next_photos = generate_sequential_variations(prompt = prompt,
                                                  initial_photo=photo,
-                                                 iterations=240)
+                                                 iterations=30) # for tests only 30
     first_page, title = generate_first_page(prompt = prompt,
                                      initial_photo = photo)
     
@@ -20,6 +21,8 @@ def generate_video():
     
     audio_path, description = generate_audio_with_salut(prompt=prompt)
     video = compile_video(first_page=first_page, photos=all_photos, audio=audio_path)
+
+    video = add_subtitles_from_text(input_video=video, text=description)
 
     return video, [first_page, *all_photos], title, description
 
