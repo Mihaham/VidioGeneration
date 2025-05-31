@@ -193,7 +193,7 @@ def generate_audio_file(text):
 
     audio_path = get_next_free_path("output/sound", prefix="sound_", suffix='.wav')
 
-    generator.text_to_audio("Большой русский текст", audio_path)
+    generator.text_to_audio(text, audio_path)
     return audio_path
 
 if __name__ == "__main__":
