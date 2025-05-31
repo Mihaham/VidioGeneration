@@ -13,7 +13,7 @@ def generate_video():
 
     next_photos = generate_sequential_variations(prompt = prompt,
                                                  initial_photo=photo,
-                                                 iterations=30) # for tests only 30
+                                                 iterations=240) # for tests only 30
     first_page, title = generate_first_page(prompt = prompt,
                                      initial_photo = photo)
     
