@@ -57,9 +57,6 @@ async def export_all_tables_csv(message: Message):
                         result = await session.execute(select(model))
                         records = result.scalars().all()
 
-                        if not records:
-                            continue
-
                         df = model_to_dataframe(model, records)
                         csv_path = tmp_path / f"{model.__tablename__}.csv"
                         df.to_csv(csv_path, index=False)
@@ -96,9 +93,6 @@ async def export_all_tables_excel(message: Message):
                     async with async_session() as session:
                         result = await session.execute(select(model))
                         records = result.scalars().all()
-
-                        if not records:
-                            continue
 
                         df = model_to_dataframe(model, records)
                         df.to_excel(

@@ -21,7 +21,7 @@ class CoverGenerator:
     def __init__(self):
         self.credentials = GIGACHAT_CREDENTIALS
         self.ca_bundle = CA_BUNDLE_FILE
-        self.font_path = "fonts\\Roboto-Bold.ttf"  # Укажите путь к шрифту
+        self.font_path = "fonts/Roboto-Medium.ttf"  # Укажите путь к шрифту
         self.emoji_mapping = {
             "sea": "🌊",
             "mountain": "⛰️",

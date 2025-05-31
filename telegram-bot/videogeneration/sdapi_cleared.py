@@ -58,7 +58,7 @@ class AsyncSDClient:
     async def __aenter__(self) -> AsyncSDClient:
         """Контекстный менеджер для инициализации сессии."""
         logger.info("Creating aiohttp client session")
-        self._session = aiohttp.ClientSession()
+        self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60*60*10))
         return self
 
     async def __aexit__(self, *exc) -> None:

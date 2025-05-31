@@ -15,6 +15,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod 777 /logs \
     && rm -rf /var/lib/apt/lists/*
 
+# Установка базовых зависимостей
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libmagickwand-dev \
+    imagemagick \
+    ghostscript \
+    fonts-dejavu \
+    fonts-dejavu-extra \
+    fonts-freefont-ttf \
+    fonts-noto-cjk \
+    fonts-noto-core
+
 RUN mkdir ./bot
 RUN mkdir ./videogeneration
 
@@ -29,8 +41,13 @@ RUN pip install asyncpg
 RUN pip install pandas
 RUN pip install psutil gputil
 RUN pip install openpyxl
+RUN pip install moviepy==1.0.3 speechrecognition pydub
 
-COPY . .
+COPY bot/ bot/
+COPY database/ database/
+COPY videogeneration/ videogeneration/
+COPY fonts/ fonts/
+COPY russian_trusted_root_ca.cer russian_trusted_root_ca.cer
 COPY main.py main.py
 
 # Используем переменную из .env
