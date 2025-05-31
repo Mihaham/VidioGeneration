@@ -187,6 +187,15 @@ def generate_audio_with_salut(prompt: str) -> str:
     
     return str(audio_path), generated_text
 
+
+def generate_audio_file(text):
+    generator = SalutWrapper()
+
+    audio_path = get_next_free_path("output/sound", prefix="sound_", suffix='.wav')
+
+    generator.text_to_audio("Большой русский текст", audio_path)
+    return audio_path
+
 if __name__ == "__main__":
     generator = SalutWrapper()
 
