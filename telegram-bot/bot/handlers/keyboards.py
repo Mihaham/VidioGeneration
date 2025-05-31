@@ -10,6 +10,8 @@ from typing import List, Tuple
 
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
+from videogeneration.config import VOICES_DICT
+
 # Константы текстов кнопок
 BTN_MEMORY_STATS = "📊 Статистика памяти"
 BTN_ADMIN_PANEL = "👑 Админ-панель"
@@ -92,3 +94,16 @@ def admin_panel_kb() -> ReplyKeyboardMarkup:
         input_field_placeholder="Выберите команду управления",
         selective=True
     )
+
+
+def get_voice_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура для выбора голоса"""
+    # Создаем кнопки с использованием KeyboardButton
+    buttons = [[KeyboardButton(text=key)] for key in VOICES_DICT.keys()]
+
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=buttons,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return keyboard

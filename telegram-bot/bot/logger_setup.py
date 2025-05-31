@@ -55,7 +55,7 @@ def setup_logger() -> None:
     console_handler: dict = {
         "sink": sys.stdout,
         "format": console_format,
-        "level": os.getenv("LOG_LEVEL", "INFO"),
+        "level": os.getenv("LOG_LEVEL", "DEBUG"),
         "colorize": True,
         "backtrace": True,
         "diagnose": True

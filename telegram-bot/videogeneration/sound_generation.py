@@ -7,7 +7,7 @@ from pathlib import Path
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
 import requests
-from videogeneration.config import GIGACHAT_CREDENTIALS, SALUT_CREDENTIALS, SALUT_CLIENT_ID
+from videogeneration.config import GIGACHAT_CREDENTIALS, SALUT_CREDENTIALS, SALUT_CLIENT_ID, VOICES
 from videogeneration.utils import get_next_free_path
 from loguru import logger
 import base64
@@ -24,7 +24,7 @@ class SalutWrapper:
         self.running = True
         self.token_ready = threading.Event()  # Событие для синхронизации
         self.token_thread = self.start()
-        self.voices = ["Nec_24000", "Bys_24000", "May_24000", "Tur_24000", "Ost_24000", "Pon_24000"]
+        self.voices = VOICES
 
         # Ждем первичное получение токена 10 секунд
         if not self.token_ready.wait(timeout=10):
@@ -83,7 +83,7 @@ class SalutWrapper:
             logger.error(f"Token update exception: {e}")
             return 0
 
-    def text_to_audio(self, text, output_path, voice='Kin_24000'):
+    def text_to_audio(self, text, output_path, voice=None):
         if not self.bearer_token:
             logger.warning("No valid access token")
         
@@ -95,7 +95,7 @@ class SalutWrapper:
         }
 
         params = {
-            'voice': random.choice(self.voices),  # Голос 
+            'voice': random.choice(self.voices) if not voice else voice,  # Голос
             'format': 'wav16',       # Формат аудио
         }
         
@@ -188,12 +188,12 @@ def generate_audio_with_salut(prompt: str) -> str:
     return str(audio_path), generated_text
 
 
-def generate_audio_file(text):
+def generate_audio_file(text, voice =None):
     generator = SalutWrapper()
 
     audio_path = get_next_free_path("output/sound", prefix="sound_", suffix='.wav')
-
-    generator.text_to_audio(text, audio_path)
+    logger.info(f"Генерирую аудиофайл из текста: {text} c голосом {voice}")
+    generator.text_to_audio(text, audio_path, voice = voice)
     return audio_path
 
 if __name__ == "__main__":
