@@ -25,6 +25,7 @@ BTN_EXCEL_LIST = "📚 Экспорт в Excel"
 BTN_CSV_LISTS = "📚 Экспорт в CSV файлы"
 BTN_GENERATE = "💫 Хочу Сгенерировать что-нибудь..."
 BTN_SOUND_GENERATION = "🔊 Хочу преобразовать текст в аудио!"
+BTN_PHOTO_GENERATION = "📸 Хочу сгенерировать фотку!"
 
 def user_main_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
     """Создает основную клавиатуру пользователя с учетом прав администратора.
@@ -38,7 +39,8 @@ def user_main_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
     # Базовые кнопки для всех пользователей
     base_buttons: List[Tuple[KeyboardButton]] = [
         (KeyboardButton(text=BTN_MEMORY_STATS),),
-        (KeyboardButton(text=BTN_SOUND_GENERATION),)
+        (KeyboardButton(text=BTN_SOUND_GENERATION),),
+        (KeyboardButton(text=BTN_PHOTO_GENERATION),)
     ]
     
     # Кнопки администратора
@@ -57,7 +59,7 @@ def user_main_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
         input_field_placeholder="Выберите действие..."
     )
 
-def admin_panel_kb() -> ReplyKeyboardMarkup:
+def admin_panel_kb(is_owner = False) -> ReplyKeyboardMarkup:
     """Генерирует клавиатуру административной панели.
     
     Returns:
@@ -75,10 +77,17 @@ def admin_panel_kb() -> ReplyKeyboardMarkup:
     ]
     
     video_controls: List[Tuple[KeyboardButton]] = [
-        (KeyboardButton(text=BTN_GEN_VIDEO_UPLOAD),),
         (KeyboardButton(text=BTN_GEN_VIDEO_LOCAL),),
-        (KeyboardButton(text=BTN_SOUND_GENERATION),)
+        (KeyboardButton(text=BTN_SOUND_GENERATION),),
+        (KeyboardButton(text=BTN_PHOTO_GENERATION),)
     ]
+
+    owner_controls : List[Tuple[KeyboardButton]] = [
+        (KeyboardButton(text=BTN_GEN_VIDEO_UPLOAD),)
+    ]
+
+    if is_owner:
+        video_controls += owner_controls
     
     navigation_buttons: List[Tuple[KeyboardButton]] = [
         (KeyboardButton(text=BTN_MAIN_MENU),)
