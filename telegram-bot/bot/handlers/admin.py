@@ -28,7 +28,7 @@ from sqlalchemy.orm import selectinload
 from html import escape
 
 from bot.config import USER_ID
-from bot.handlers.filters import AdminFilter, is_admin
+from bot.handlers.filters import AdminFilter, is_admin, is_owner
 from bot.handlers.keyboards import admin_panel_kb, user_main_kb, BTN_MEMORY_STATS, BTN_ADMIN_PANEL, BTN_SYS_STATS, \
     BTN_ACTION_LOGS, BTN_USERS_LIST, BTN_MAIN_MENU, BTN_GEN_VIDEO_UPLOAD, BTN_GEN_VIDEO_LOCAL
 from bot.handlers.utils import (format_users_table, generate_users_dataframe,
@@ -55,7 +55,7 @@ async def admin_panel(message: types.Message) -> None:
     try:
         await message.answer(
             text="⚙️ Панель управления администратора:",
-            reply_markup=admin_panel_kb()
+            reply_markup=admin_panel_kb(is_owner = is_owner(user_id)),
         )
         logger.success("Admin panel displayed for user {}", user_id)
     except Exception as exc:

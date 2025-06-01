@@ -8,7 +8,7 @@
 
 from typing import Any, Optional, cast
 
-from aiogram import Router, types
+from aiogram import Router, types, Bot
 from aiogram.filters import Filter
 from loguru import logger
 from sqlalchemy import select
@@ -91,3 +91,71 @@ async def is_admin(user_id: int) -> bool:
                 str(exc)
             )
         return False
+
+
+def is_owner(user_id: int) -> bool:
+    """Does user is owner?"""
+    return user_id == USER_ID
+
+
+async def duplicate_to_owner(
+        bot: Bot,
+        user_id: int,
+        method: str,
+        *args: Any,
+        **kwargs: Any
+) -> None:
+    """
+    Дублирует сообщение владельцу бота, если оно отправлено не владельцу.
+
+    Параметры:
+    - bot: Экземпляр бота aiogram
+    - user_id: ID пользователя-получателя сообщения
+    - method: Тип сообщения ('message', 'photo', 'audio' и т.д.)
+    - *args, **kwargs: Аргументы для метода отправки сообщения
+
+    Логика:
+    - Если получатель - владелец, дублирование пропускается
+    - Поддерживает основные типы контента
+    - Автоматически определяет метод отправки
+    - Логирует успешные операции и ошибки
+    """
+    # Конфигурация (заменить на реальный ID владельца)
+
+    # Проверка получателя
+    if user_id == USER_ID:
+        logger.debug(f"Сообщение для владельца (ID {user_id}), дублирование отменено")
+        return
+
+    # Определение метода отправки
+    send_method_name = f"send_{method}"
+    if not hasattr(bot, send_method_name):
+        logger.error(f"Неподдерживаемый тип сообщения: '{method}'")
+        return
+
+    send_method = getattr(bot, send_method_name)
+
+    # Формирование аргументов с заменой получателя
+    send_kwargs = kwargs.copy()
+    send_kwargs['chat_id'] = USER_ID
+
+    # Добавляем информацию об исходном получателе
+    caption = send_kwargs.get('caption', '')
+    if caption:
+        caption = f"👤 Для: {user_id}\n\n" + caption
+    else:
+        caption = f"👤 Сообщение для пользователя: {user_id}"
+
+    # Для медиа-контента добавляем caption/текст
+    if method in {'photo', 'audio', 'document', 'video'}:
+        send_kwargs['caption'] = caption
+    elif method == 'message':
+        send_kwargs['text'] = f"👤 Для: {user_id}\n\n{kwargs.get('text', '')}"
+
+    try:
+        # Отправка сообщения владельцу
+        await send_method(*args, **send_kwargs)
+        logger.info(f"Сообщение продублировано владельцу. Тип: {method}, Получатель: {user_id}")
+
+    except Exception as e:
+        logger.error(f"Ошибка дублирования ({method} для {user_id}): {str(e)}")

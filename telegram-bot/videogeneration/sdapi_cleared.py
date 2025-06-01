@@ -569,6 +569,37 @@ async def main() -> None:
     await test_image_generation()
 
 
+async def generate_photo_file(prompt: str):
+    """
+
+    Returns:
+
+    """
+    params = {
+        "prompt": prompt,
+        "negative_prompt": "nsfw, nudes, low quality, deformed, blurry",
+        "steps": 25,
+        "width": 512,
+        "height": 768,
+        "cfg_scale": 7.5,
+        "sampler_name": "DPM++ 2M Karras",
+        "scheduler": "Karras",
+        "seed": -1,
+        "n_iter": 1,
+        "batch_size": 1,
+        "restore_faces": False,
+    }
+
+    async with AsyncSDClient() as sd:
+        await sd.initialize()
+        if not any(s["name"] == params["sampler_name"] for s in sd.samplers):
+            params["sampler_name"] = sd.samplers[0]["name"]
+            logger.warning("Using fallback sampler: {}", params["sampler_name"])
+
+        images = await sd.txt2img(**params)
+        paths = await save_images(images, "output/generated")
+    return paths[0]
+
 
 if __name__ == "__main__":
     asyncio.run(main())
