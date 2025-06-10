@@ -39,6 +39,7 @@ RUN venv/bin/python -m pip install git+https://github.com/openai/CLIP.git
 RUN venv/bin/python -m pip install loguru
 
 COPY print_replacer.py print_replacer.py
+COPY mytqdm.py mytqdm.py
 RUN venv/bin/python print_replacer.py /app/stable-diffusion-webui
 
 # Stage 2: Runtime stage
