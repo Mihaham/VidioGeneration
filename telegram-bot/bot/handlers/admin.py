@@ -99,7 +99,7 @@ async def back_to_main(message: types.Message) -> None:
 
 @router.message(F.text == BTN_GEN_VIDEO_LOCAL)
 @router.message(F.text == BTN_GEN_VIDEO_UPLOAD)
-async def handle_video_generation(message: types.Message, bot: Bot) -> None:
+async def handle_video_generation(message: types.Message, bot: Bot, state: FSMContext) -> None:
     """Обрабатывает запросы на генерацию видео."""
     user_id = message.from_user.id
     upload = "загрузкой" in message.text

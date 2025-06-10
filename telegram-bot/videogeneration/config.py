@@ -21,3 +21,6 @@ VOICES_DICT = {
     "👨 Сергей": "Pon_24000",
     "👩 Kira (Английский язык)": "Kin_24000"
 }
+
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtubepartner"]
+TOKEN_FILE = "tokens/token.json"
