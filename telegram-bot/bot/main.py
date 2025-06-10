@@ -22,14 +22,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.util import undefined
 
 from bot.config import TIMEZONE, TOKEN, USER_ID, NEED_SHEDULER
-from bot.handlers import admin, common, memory_handler, generation, data, user
+from bot.handlers import admin, common, memory_handler, generation, data, user, google_auth
 from bot.logger_setup import logger
-from bot.scheduler import setup_scheduler
+from bot.scheduler import setup_scheduler, init_dispatcher
 from database.db import init_db
 from bot.middleware.database_middleware import DatabaseMiddleware
 from bot.handlers.keyboards import user_main_kb
 
-async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
+async def on_startup(bot: Bot, scheduler: AsyncIOScheduler, dispatcher) -> None:
     """Выполняет инициализацию приложения при старте.
     
     Args:
@@ -65,6 +65,7 @@ async def on_startup(bot: Bot, scheduler: AsyncIOScheduler) -> None:
     if NEED_SHEDULER:
         # Настройка планировщика
         try:
+            init_dispatcher(dispatcher=dispatcher)
             setup_scheduler(scheduler, bot, USER_ID)
             if scheduler.state == 0:  # type: ignore
                 scheduler.start()
@@ -95,13 +96,13 @@ async def main() -> None:
         scheduler = AsyncIOScheduler(timezone=TIMEZONE)
         
         # Регистрация роутеров
-        routers = (memory_handler.memory_router, admin.router, common.router, generation.image_router, data.router, user.router)
+        routers = (memory_handler.memory_router, admin.router, common.router, generation.image_router, data.router, user.router, google_auth.router)
         for router in routers:
             dp.include_router(router)
         logger.debug("Зарегистрировано роутеров: {}", len(routers))
         
         # Запуск процедур инициализации
-        await on_startup(bot, scheduler)
+        await on_startup(bot, scheduler, dp)
         
         # Основной цикл работы бота
         logger.info("Запуск основного цикла обработки сообщений")

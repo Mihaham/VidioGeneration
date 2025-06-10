@@ -20,8 +20,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtubepartner"]
-TOKEN_FILE = "token.json"
+from videogeneration.config import TOKEN_FILE, SCOPES
 RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, httplib2.ServerNotFoundError,)
 RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
 MAX_RETRIES = 10
@@ -32,32 +31,12 @@ def get_authenticated_service():
     if os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
         logger.info("Found authorization file")
+    else:
+        logger.warning("No token file found")
+        raise ValueError("No token file found")
     if creds:
         logger.debug(f"Does creds valid? {creds.valid}")
 
-    logger.info("Anyway refreshing credentials")
-    if creds and creds.refresh_token:
-        logger.warning("Trying to refresh token")
-        creds.refresh(Request())
-    else:
-        logger.warning("Initializing creds")
-        flow = Flow.from_client_secrets_file(
-            'client_secrets.json',
-            scopes=SCOPES,
-            redirect_uri='urn:ietf:wg:oauth:2.0:oob'
-        )
-            
-        auth_url, _ = flow.authorization_url(prompt='consent')
-        print(f'Перейдите по ссылке: {auth_url}')
-        code = input('Введите код авторизации: ')
-
-        flow.fetch_token(code=code)
-        creds = flow.credentials
-
-    with open(TOKEN_FILE, "w") as token:
-        token.write(creds.to_json())
-    
-    logger.success(f"Token refreshed successfully")
     
     return build("youtube", "v3", credentials=creds)
 

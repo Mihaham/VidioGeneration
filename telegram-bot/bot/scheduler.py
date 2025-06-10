@@ -10,12 +10,14 @@
 
 import asyncio
 import time
+from asyncore import dispatcher
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from aiogram import Bot
-from aiogram.types import FSInputFile
+from aiogram import Bot, Dispatcher
+from aiogram.types import FSInputFile, Message
 from aiogram.utils.media_group import MediaGroupBuilder
+from aiogram.fsm.context import FSMContext
 from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -23,8 +25,43 @@ from loguru import logger
 from moviepy.editor import VideoFileClip
 
 from bot.config import TIMEZONE
+from bot.handlers.google_auth import upload_video_wrapper
 from videogeneration.main import generate_video
 from videogeneration.upload_video import upload_video
+
+from videogeneration.config import TOKEN_FILE
+
+from aiogram.fsm.storage.base import StorageKey
+
+dp_instance = None
+
+
+def init_dispatcher(dispatcher: Dispatcher):
+    global dp_instance
+    dp_instance = dispatcher
+
+
+async def get_user_state(dispatcher: Dispatcher, user_id: int) -> tuple:
+    """
+    Возвращает текущее состояние и данные пользователя
+    Возвращает: (состояние, данные)
+    """
+    bot = dispatcher.bot
+    # Создаем ключ хранилища для пользователя
+    storage_key = StorageKey(
+        bot_id=bot.id,
+        chat_id=user_id,  # Для личных чатов chat_id = user_id
+        user_id=user_id
+    )
+
+    # Получаем текущее состояние
+    state = await dispatcher.storage.get_state(key=storage_key)
+
+    # Получаем данные состояния
+    data = await dispatcher.storage.get_data(key=storage_key)
+
+    return state, data
+
 
 async def get_video_duration(video_path: Path) -> float:
     """Получает продолжительность видеофайла в секундах.
@@ -64,6 +101,7 @@ async def send_photos_group(bot: Bot, user_id: int, photos_paths: List[Path]) ->
             await asyncio.sleep(5)  # Асинхронная задержка
         except Exception as exc:
             logger.error("Ошибка отправки медиагруппы: {}", exc)
+
 
 async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) -> None:
     """Основная задача для генерации и отправки видео.
@@ -140,15 +178,21 @@ async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) ->
         )
                 
     if upload and video_path:
-        try:
-            video_id = upload_video(video_path, title=title, privacy="public", description=description)
-            await bot.send_message(
-                chat_id=user_id,
-                text=f"Опубликовал видео https://www.youtube.com/watch?v={video_id}"
-            )
-            logger.success(f"Видео {video_id} успешно загружено на ютуб")
-        except Exception as upload_exc:
-            logger.error("Ошибка загрузки видео: {}", upload_exc)
+        dp = dp_instance
+        storage_key = StorageKey(
+            bot_id=bot.id,
+            chat_id=user_id,
+            user_id=user_id
+        )
+        state = FSMContext(storage=dp.storage, key=storage_key)
+        await upload_video_wrapper(
+            bot=bot,
+            user_id=user_id,
+            state=state,
+            video_path=video_path,
+            title=title,
+            description=description
+        )
 
 def setup_scheduler(scheduler: AsyncIOScheduler, bot: Bot, user_id: int) -> Job:
     """Настраивает и добавляет задание в планировщик.
@@ -165,7 +209,7 @@ def setup_scheduler(scheduler: AsyncIOScheduler, bot: Bot, user_id: int) -> Job:
         send_scheduled_message,
         trigger=CronTrigger(
             day_of_week="tue,fri",
-            hour=12,
+            hour=10,
             minute=0,
             timezone=TIMEZONE
         ),
