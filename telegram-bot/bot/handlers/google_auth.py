@@ -9,23 +9,24 @@ from aiogram.fsm.state import State, StatesGroup
 
 from bot.handlers.filters import OwnerFilter
 from bot.handlers.keyboards import BTN_AUTHORIZATION
-from videogeneration.config import TOKEN_FILE
+from videogeneration.config import TOKEN_FILE, SCOPES
 from videogeneration.upload_video import upload_video
 from loguru import logger
 
 # Конфигурация
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']  # Ваши scopes
 TOKEN_DIR = "tokens"
 os.makedirs(TOKEN_DIR, exist_ok=True)
 
 router = Router()
 router.message.filter(OwnerFilter())
 
+
+
 class AuthStates(StatesGroup):
     waiting_auth_code = State()
 
 
-async def get_authenticated_service(user_id: int, state: FSMContext = None) -> Credentials:
+async def get_authenticated_service(user_id: int, bot : Bot, state: FSMContext = None) -> Credentials:
     """Получение авторизованного сервиса с обработкой через FSM"""
     creds = None
 
@@ -36,13 +37,15 @@ async def get_authenticated_service(user_id: int, state: FSMContext = None) -> C
     if creds and creds.valid:
         return creds
 
+    logger.debug(f"Creds are not valid!, state: {state}")
     # Если требуется полная авторизация
     if state:
-        await start_auth_flow(user_id, state)
+        logger.debug(f"Starting auth for user {user_id}")
+        await start_auth_flow(user_id, bot,  state)
     return None
 
 
-async def start_auth_flow(user_id: int, state: FSMContext):
+async def start_auth_flow(user_id: int, bot: Bot, state: FSMContext):
     """Инициирует процесс OAuth аутентификации"""
     flow = Flow.from_client_secrets_file(
         'client_secrets.json',
@@ -55,7 +58,7 @@ async def start_auth_flow(user_id: int, state: FSMContext):
     await state.update_data(flow=flow, user_id=user_id)
 
     # Отправляем пользователю ссылку для авторизации
-    message = await state.bot.send_message(
+    message = await bot.send_message(
         chat_id=user_id,
         text=f"🔑 [Авторизация] Пожалуйста, перейдите по ссылке:\n{auth_url}\n\n"
              "После разрешения доступа введите полученный код:",
@@ -67,9 +70,9 @@ async def start_auth_flow(user_id: int, state: FSMContext):
 
 
 @router.message(F.text == BTN_AUTHORIZATION)
-async def auth_command(message: types.Message, state: FSMContext):
+async def auth_command(message: types.Message, bot : Bot, state: FSMContext):
     user_id = message.from_user.id
-    creds = await get_authenticated_service(user_id, state)
+    creds = await get_authenticated_service(user_id, bot, state)
 
     if creds:
         await message.answer("✅ Вы уже авторизованы!")
@@ -145,8 +148,7 @@ async def upload_video_wrapper(
     # Если есть действительные учетные данные - загружаем видео
     try:
         video_id = upload_video(
-            creds=creds,
-            video_path=video_path,
+            file_path=video_path,
             title=title,
             privacy="public",
             description=description

@@ -48,6 +48,7 @@ COPY database/ database/
 COPY videogeneration/ videogeneration/
 COPY fonts/ fonts/
 COPY russian_trusted_root_ca.cer russian_trusted_root_ca.cer
+COPY client_secrets.json client_secrets.json
 COPY main.py main.py
 
 # Используем переменную из .env

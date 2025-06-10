@@ -10,10 +10,11 @@
 
 import asyncio
 import time
+from asyncore import dispatcher
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from aiogram import Bot
+from aiogram import Bot, Dispatcher
 from aiogram.types import FSInputFile, Message
 from aiogram.utils.media_group import MediaGroupBuilder
 from aiogram.fsm.context import FSMContext
@@ -28,7 +29,38 @@ from bot.handlers.google_auth import upload_video_wrapper
 from videogeneration.main import generate_video
 from videogeneration.upload_video import upload_video
 
-from tests.test_notebook import TOKEN_FILE
+from videogeneration.config import TOKEN_FILE
+
+from aiogram.fsm.storage.base import StorageKey
+
+dp_instance = None
+
+
+def init_dispatcher(dispatcher: Dispatcher):
+    global dp_instance
+    dp_instance = dispatcher
+
+
+async def get_user_state(dispatcher: Dispatcher, user_id: int) -> tuple:
+    """
+    Возвращает текущее состояние и данные пользователя
+    Возвращает: (состояние, данные)
+    """
+    bot = dispatcher.bot
+    # Создаем ключ хранилища для пользователя
+    storage_key = StorageKey(
+        bot_id=bot.id,
+        chat_id=user_id,  # Для личных чатов chat_id = user_id
+        user_id=user_id
+    )
+
+    # Получаем текущее состояние
+    state = await dispatcher.storage.get_state(key=storage_key)
+
+    # Получаем данные состояния
+    data = await dispatcher.storage.get_data(key=storage_key)
+
+    return state, data
 
 
 async def get_video_duration(video_path: Path) -> float:
@@ -146,6 +178,13 @@ async def send_scheduled_message(bot: Bot, user_id: int, upload: bool = True) ->
         )
                 
     if upload and video_path:
+        dp = dp_instance
+        storage_key = StorageKey(
+            bot_id=bot.id,
+            chat_id=user_id,
+            user_id=user_id
+        )
+        state = FSMContext(storage=dp.storage, key=storage_key)
         await upload_video_wrapper(
             bot=bot,
             user_id=user_id,
@@ -170,7 +209,7 @@ def setup_scheduler(scheduler: AsyncIOScheduler, bot: Bot, user_id: int) -> Job:
         send_scheduled_message,
         trigger=CronTrigger(
             day_of_week="tue,fri",
-            hour=12,
+            hour=10,
             minute=0,
             timezone=TIMEZONE
         ),
