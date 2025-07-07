@@ -54,7 +54,7 @@ services:
     volumes:
       - ./telegram-bot/logs:/app/logs
       - ./telegram-bot/output:/app/output
-      - ./telegram-bot/token.json:/app/token.json
+      - ./telegram-bot/tokens:/app/tokens
     env_file:
       - ./telegram-bot/.env
     restart: unless-stopped

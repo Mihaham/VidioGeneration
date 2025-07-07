@@ -26,6 +26,7 @@ BTN_CSV_LISTS = "📚 Экспорт в CSV файлы"
 BTN_GENERATE = "💫 Хочу Сгенерировать что-нибудь..."
 BTN_SOUND_GENERATION = "🔊 Хочу преобразовать текст в аудио!"
 BTN_PHOTO_GENERATION = "📸 Хочу сгенерировать фотку!"
+BTN_AUTHORIZATION = "🔐 Авторизоваться на ютубе"
 
 def user_main_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
     """Создает основную клавиатуру пользователя с учетом прав администратора.
@@ -83,7 +84,8 @@ def admin_panel_kb(is_owner = False) -> ReplyKeyboardMarkup:
     ]
 
     owner_controls : List[Tuple[KeyboardButton]] = [
-        (KeyboardButton(text=BTN_GEN_VIDEO_UPLOAD),)
+        (KeyboardButton(text=BTN_GEN_VIDEO_UPLOAD),),
+        (KeyboardButton(text=BTN_AUTHORIZATION),),
     ]
 
     if is_owner:

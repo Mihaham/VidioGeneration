@@ -42,6 +42,31 @@ class AdminFilter(Filter):
         user_id = update.from_user.id
         return await is_admin(user_id)
 
+
+class OwnerFilter(Filter):
+    """Фильтр проверки прав владельца пользователя.
+
+    Использование:
+    @router.message(OwnerFilter())
+    async def owner_handler(message: types.Message):
+        ...
+    """
+
+    async def __call__(self, update: Any) -> bool:
+        """Проверяет наличие административных прав у отправителя сообщения.
+
+        Args:
+            update: Объект входящего обновления от Telegram
+
+        Returns:
+            bool: True если пользователь имеет права администратора
+        """
+        if not isinstance(update, types.Message):
+            return False
+
+        user_id = update.from_user.id
+        return is_owner(user_id)
+
 async def is_admin(user_id: int) -> bool:
     """Проверяет наличие административных прав у пользователя.
     

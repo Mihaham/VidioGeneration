@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y \
     fonts-noto-cjk \
     fonts-noto-core
 
+RUN apt-get install build-essential -y # Installs g++ and other tools
+
 RUN mkdir ./bot
 RUN mkdir ./videogeneration
 
@@ -38,7 +40,7 @@ RUN pip install -r /bot/requirements.txt
 RUN pip install gigachat
 RUN pip install sqlalchemy
 RUN pip install asyncpg
-RUN pip install pandas
+RUN pip install pandas==1.5.3
 RUN pip install psutil gputil
 RUN pip install openpyxl
 RUN pip install moviepy==1.0.3 speechrecognition pydub
@@ -48,6 +50,7 @@ COPY database/ database/
 COPY videogeneration/ videogeneration/
 COPY fonts/ fonts/
 COPY russian_trusted_root_ca.cer russian_trusted_root_ca.cer
+COPY client_secrets.json client_secrets.json
 COPY main.py main.py
 
 # Используем переменную из .env
