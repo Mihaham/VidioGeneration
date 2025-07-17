@@ -87,8 +87,8 @@ def generate_sequential_variations(
             # Базовые параметры генерации
             base_params = {
                 "prompt": prompt,
-                "negative_prompt": "deformed, blurry, low quality, artifacts",
-                "steps": 50,
+                "negative_prompt": "deformed, blurry, low quality, artifacts, nudes",
+                "steps": 150,
                 "width": 512,
                 "height": 768,
                 "cfg_scale": 7,

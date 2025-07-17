@@ -13,15 +13,15 @@ def generate_video():
 
     next_photos = generate_sequential_variations(prompt = prompt,
                                                  initial_photo=photo,
-                                                 iterations=500,
-                                                 denoising_strength = 0.25) # for tests only 30
+                                                 iterations=1500, # for tests only 30
+                                                 denoising_strength = 0.10)
     first_page, title = generate_first_page(prompt = prompt,
                                      initial_photo = photo)
     
     all_photos = [photo, *next_photos]
     
     audio_path, description = generate_audio_with_salut(prompt=prompt)
-    video = compile_video(first_page=first_page, photos=all_photos, audio=audio_path)
+    video = compile_video(first_page=first_page, photos=all_photos, audio=audio_path, duration = 0.025)
 
     video = add_subtitles_from_text(input_video=video, text=description)
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional, Dict
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, JSON, BigInteger
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -30,7 +30,7 @@ class User(Base):
     
     __tablename__ = 'users'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(
         Integer, 
         unique=True,

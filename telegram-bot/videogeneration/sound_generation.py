@@ -9,6 +9,7 @@ from gigachat.models import Chat, Messages, MessagesRole
 import requests
 from videogeneration.config import GIGACHAT_CREDENTIALS, SALUT_CREDENTIALS, SALUT_CLIENT_ID, VOICES
 from videogeneration.utils import get_next_free_path
+from moviepy.editor import AudioFileClip
 from loguru import logger
 import base64
 import random
@@ -148,7 +149,7 @@ def generate_audio_with_salut(prompt: str) -> str:
                             - Выделения жирным/курсивом
                             - Заголовки
                             - Разделители (---, ===)
-                            3. Строго 20-25 предложений (~800 символов)
+                            3. Строго 15-20 предложений (~600 символов)
                             4. Плавные переходы между предложениями
                             5. Используй:
                             - Союзы (однако, тем временем, постепенно)
@@ -184,6 +185,10 @@ def generate_audio_with_salut(prompt: str) -> str:
     audio_path = get_next_free_path("output/sound", prefix="sound_", suffix = '.wav')
 
     generator.text_to_audio(generated_text, audio_path)
+
+    if not (0.5 < AudioFileClip(str(audio_path)).duration < 1):
+        logger.warning(f"AUDIO IS NOT IN CORRECT DURATION : {AudioFileClip(str(audio_path)).duration}")
+        return generate_audio_with_salut(prompt)
     
     return str(audio_path), generated_text
 

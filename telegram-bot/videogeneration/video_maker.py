@@ -5,10 +5,10 @@ from videogeneration.utils import get_next_free_path
 from loguru import logger
 from bot.logger_setup import LoguruMoviePyLogger
 
-def compile_video(first_page: str, photos: List[str], audio: str) -> str:
+def compile_video(first_page: str, photos: List[str], audio: str, duration = 0.05) -> str:
     # Константы для настройки длительности и FPS
     FIRST_DURATION = 1.0     # Длительность первого изображения (секунды)
-    OTHER_DURATION = 0.05     # Длительность остальных изображений (секунды)
+    OTHER_DURATION = duration     # Длительность остальных изображений (секунды)
     FPS = 24                 # Кадров в секунду
     OUTPUT_PATH = get_next_free_path("output/video", prefix="video_", suffix=".mp4")  # Путь для сохранения видео
     logger.debug(f"Compiling video")
