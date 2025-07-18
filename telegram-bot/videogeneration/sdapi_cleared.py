@@ -425,7 +425,7 @@ class AsyncSDClient:
         payload = {"image": self._b64_encode(image)}
         return await self._request("sdapi/v1/png-info", payload)
 
-    async def _request(self, endpoint: str, payload: Dict) -> Dict:
+    async def _request(self, endpoint: str, payload: Dict, retry = 2) -> Dict:
         """Базовый метод для выполнения запросов"""
         url = f"{self.base_url}/{endpoint}"
         logger.debug("Making POST request to {}", url)
@@ -442,6 +442,8 @@ class AsyncSDClient:
             raise
         except aiohttp.ClientError as e:
             logger.critical("Connection error: {}", str(e))
+            if retry:
+                return await self._request(endpoint, payload, retry - 1)
             raise
         except Exception as e:
             logger.exception("Unexpected error during request: {}", e)
